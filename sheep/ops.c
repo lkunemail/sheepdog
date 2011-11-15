@@ -489,6 +489,11 @@ static struct sd_op_template sd_ops[] = {
 	[SD_OP_REMOVE_OBJ] = {
 		.type = SD_OP_TYPE_IO,
 	},
+
+	[SD_OP_FLUSH_VDI] = {
+		.type = SD_OP_TYPE_IO,
+	},
+
 };
 
 struct sd_op_template *get_sd_op(uint8_t opcode)
