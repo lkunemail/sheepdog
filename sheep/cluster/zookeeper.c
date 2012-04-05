@@ -47,6 +47,7 @@ enum zk_event_type {
 struct zk_node {
 	int seq;
 	int joined;
+	clientid_t clientid;
 	struct sd_node node;
 };
 
@@ -72,6 +73,7 @@ static LIST_HEAD(zk_levent_list);
 
 static struct zk_node zk_nodes[SD_MAX_NODES];
 static size_t nr_zk_nodes;
+static char *zk_option;
 
 /* protect queue_start_pos */
 static pthread_mutex_t queue_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -575,6 +577,10 @@ static int zk_init(struct cdrv_handlers *handlers, const char *option,
 		return -1;
 	}
 
+	if (zk_option)
+		free(zk_option);
+	zk_option = strdup(option);
+
 	zhandle = zookeeper_init(option, watcher, 2000, 0, NULL, 0);
 	if (!zhandle) {
 		eprintf("failed to connect to zk server %s\n", option);
@@ -605,6 +611,8 @@ static int zk_join(struct sd_node *myself,
 {
 	int rc;
 	char path[256];
+	struct zk_node *znode;
+	zhandle_t *zh = NULL;
 
 	zk_lock(zhandle);
 
@@ -616,6 +624,19 @@ static int zk_join(struct sd_node *myself,
 	zk_check_join_cb = check_join_cb;
 
 	dprintf("this_seq:%d\n", this_node.seq);
+
+	/* try to recover previous session */
+	znode = find_node(zk_nodes, nr_zk_nodes, &this_node);
+	if (znode) {
+		zh = zookeeper_init(zk_option, watcher, 2000, &znode->clientid, NULL, 0);
+		if (zh) {
+			dprintf("recover previous session successfully! clientid:%ld\n", znode->clientid.client_id);
+			zk_unlock(zhandle);
+			zookeeper_close(zhandle);
+			zhandle = zh;
+			return 0;
+		}
+	}
 
 	sprintf(path, MEMBER_ZNODE "/%s", node_to_str(myself));
 	do {
