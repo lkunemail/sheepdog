@@ -48,7 +48,8 @@ endif
 
 if BUILD_SHEEPFS
 sheep_SOURCES		+= sheepfs/core.c sheepfs/cluster.c sheepfs/VDI.c \
-			   sheepfs/shadow_file.c sheepfs/volume.c
+			   sheepfs/shadow_file.c sheepfs/volume.c \
+			   sheepfs/node.c
 endif
 
 sheep_LDADD	  	= ../lib/libsheepdog.a -lpthread \
