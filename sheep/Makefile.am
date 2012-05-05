@@ -46,12 +46,17 @@ if BUILD_TRACE
 sheep_SOURCES		+= trace/trace.c trace/mcount.S trace/stabs.c trace/graph.c
 endif
 
+if BUILD_SHEEPFS
+sheep_SOURCES		+= sheepfs/core.c sheepfs/cluster.c sheepfs/VDI.c
+endif
+
 sheep_LDADD	  	= ../lib/libsheepdog.a -lpthread \
 			  $(libcpg_LIBS) $(libcfg_LIBS) $(libacrd_LIBS) $(LIBS)
 sheep_DEPENDENCIES	= ../lib/libsheepdog.a
 
 
-noinst_HEADERS		= work.h sheep_priv.h cluster.h strbuf.h farm/farm.h trace/trace.h
+noinst_HEADERS		= work.h sheep_priv.h cluster.h strbuf.h farm/farm.h trace/trace.h \
+			  sheepfs/sheepfs.h
 
 EXTRA_DIST		= 
 

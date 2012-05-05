@@ -208,6 +208,11 @@ AC_ARG_ENABLE([trace],
 	[ enable_trace="no" ],)
 AM_CONDITIONAL(BUILD_TRACE, test x$enable_trace = xyes)
 
+AC_ARG_ENABLE([sheepfs],
+	[  --enable-sheepfs         : enable sheepfs],,
+	[ enable_sheepfs="yes" ],)
+AM_CONDITIONAL(BUILD_SHEEPFS, test x$enable_sheepfs = xyes)
+
 CP=cp
 OS_LDL="-ldl"
 case "$host_os" in
@@ -285,6 +290,15 @@ if test "x${enable_trace}" = xyes; then
 	PACKAGE_FEATURES="$PACKAGE_FEATURES trace"
 fi
 
+if test "x${enable_sheepfs}" = xyes; then
+	AC_CHECK_LIB([fuse], [fuse_main_real],,
+		AC_MSG_ERROR(libfuse not found))
+#	AC_CHECK_HEADERS([fuse.h],,
+#		AC_MSG_ERROR(fuse header missing))
+	AC_DEFINE_UNQUOTED([HAVE_SHEEPFS], 1, [have sheepfs])
+	PACKAGE_FEATURES="$PACKAGE_FEATURES sheepfs"
+fi
+
 # extra warnings
 EXTRA_WARNINGS=""
 
@@ -349,8 +363,16 @@ else
 	TRACE_CFLAGS=""
 fi
 
+if test "x${enable_sheepfs}" = xyes ; then
+	AC_MSG_NOTICE([Enabling sheepfs (-lfuse)])
+	SHEEPFS_CFLAGS="-lfuse -DENABLE_SHEEPFS -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64"
+	PACKAGE_FEATURES="$PACKAGE_FEATURES sheepfs"
+else
+	SHEEPFS_CFLAGS=""
+fi
+
 # final build of *FLAGS
-CFLAGS="$ENV_CFLAGS $OPT_CFLAGS $GDB_FLAGS $OS_CFLAGS \
+CFLAGS="$ENV_CFLAGS $OPT_CFLAGS $GDB_FLAGS $OS_CFLAGS $SHEEPFS_CFLAGS \
 	$TRACE_CFLAGS $COVERAGE_CFLAGS $EXTRA_WARNINGS $WERROR_CFLAGS $NSS_CFLAGS \
 	-D_GNU_SOURCE"
 CPPFLAGS="$ENV_CPPFLAGS $ANSI_CPPFLAGS $OS_CPPFLAGS"
@@ -409,6 +431,7 @@ AC_MSG_RESULT([  Coverage     CFLAGS      = ${COVERAGE_CFLAGS}])
 AC_MSG_RESULT([  Coverage     LDFLAGS     = ${COVERAGE_LDFLAGS}])
 AC_MSG_RESULT([  Fatal War.   CFLAGS      = ${WERROR_CFLAGS}])
 AC_MSG_RESULT([  Trace        CFLAGS      = ${TRACE_CFLAGS}])
+AC_MSG_RESULT([  Sheepfs      CFLAGS      = ${SHEEPFS_CFLAGS}])
 AC_MSG_RESULT([  Final        CFLAGS      = ${CFLAGS}])
 AC_MSG_RESULT([  Final        CPPFLAGS    = ${CPPFLAGS}])
 AC_MSG_RESULT([  Final        LDFLAGS     = ${LDFLAGS}])
