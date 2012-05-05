@@ -244,6 +244,13 @@ int volume_sync(const char *path)
 	return 0;
 }
 
+int volume_open(const char *path, struct fuse_file_info *fi)
+{
+	/* our pseudo block file need this flag to function correctly */
+	fi->direct_io = 1;
+	return 0;
+}
+
 static int init_vdi_info(const char *entry, uint32_t *vid, size_t *size)
 {
 	struct strbuf *buf;
