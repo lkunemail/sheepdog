@@ -297,6 +297,15 @@ static void queue_request(struct request *req)
 		break;
 	}
 
+	/*
+	 * we set epoch for non direct requests here. Note that we
+	 * can't access to sys->epoch after calling
+	 * process_request_event_queues(that is, passing requests to work
+	 * threads).
+	 */
+	if (!(hdr->flags & SD_FLAG_CMD_IO_LOCAL))
+		hdr->epoch = sys->epoch;
+
 	req->vnodes = get_vnode_info();
 	if (is_io_op(req->op)) {
 		req->work.fn = do_io_request;
@@ -316,15 +325,6 @@ static void queue_request(struct request *req)
 		req->done(req);
 		return;
 	}
-	/*
-	 * we set epoch for non direct requests here. Note that we
-	 * can't access to sys->epoch after calling
-	 * process_request_event_queues(that is, passing requests to work
-	 * threads).
-	 */
-	if (!(hdr->flags & SD_FLAG_CMD_IO_LOCAL))
-		hdr->epoch = sys->epoch;
-
 	list_del(&req->r_wlist);
 
 	cevent->ctype = EVENT_REQUEST;
