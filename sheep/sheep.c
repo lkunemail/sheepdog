@@ -22,6 +22,7 @@
 
 #include "sheep_priv.h"
 #include "trace/trace.h"
+#include "sheepfs/sheepfs.h"
 
 #define EPOLL_SIZE 4096
 #define DEFAULT_OBJECT_DIR "/tmp"
@@ -229,6 +230,10 @@ int main(int argc, char **argv)
 		exit(1);
 
 	ret = init_store(dir);
+	if (ret)
+		exit(1);
+
+	ret = sheepfs_init(dir);
 	if (ret)
 		exit(1);
 
