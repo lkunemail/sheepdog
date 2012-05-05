@@ -47,7 +47,8 @@ sheep_SOURCES		+= trace/trace.c trace/mcount.S trace/stabs.c trace/graph.c
 endif
 
 if BUILD_SHEEPFS
-sheep_SOURCES		+= sheepfs/core.c sheepfs/cluster.c sheepfs/VDI.c
+sheep_SOURCES		+= sheepfs/core.c sheepfs/cluster.c sheepfs/VDI.c \
+			   sheepfs/shadow_file.c
 endif
 
 sheep_LDADD	  	= ../lib/libsheepdog.a -lpthread \
