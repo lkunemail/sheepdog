@@ -233,7 +233,7 @@ int main(int argc, char **argv)
 	if (ret)
 		exit(1);
 
-	ret = sheepfs_init(dir);
+	ret = sheepfs_init(dir, port);
 	if (ret)
 		exit(1);
 

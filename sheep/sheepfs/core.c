@@ -8,22 +8,24 @@
 #include "strbuf.h"
 #include "logger.h"
 #include "sheepfs.h"
+#include "net.h"
 
 #define SH_OP_NAME   "user.sheepfs.opcode"
 #define SH_OP_SIZE   sizeof(uint32_t)
 
 char sheepfs_shadow[PATH_MAX];
+int sheep_fd;
 
 static struct sheepfs_file_operation {
 	int (*read)(const char *path, char *buf, size_t size, off_t);
 	int (*write)(const char *path, const char *buf, size_t size, off_t);
 	size_t (*get_size)(const char *path);
 } sheepfs_file_ops[] = {
-	[OP_NULL          = { NULL, NULL, NULL },
-	[OP_CLUSTER_INFO] = { cluster_info_read, NULL,
-				cluster_info_get_size },
+	[OP_NULL]         = { NULL, NULL, NULL },
+	[OP_CLUSTER_INFO] = { cluster_info_read, NULL, cluster_info_get_size },
 	[OP_VDI_LIST]     = { vdi_list_read, NULL, vdi_list_get_size },
 	[OP_VDI_MOUNT]    = { NULL, vdi_mount_write, NULL },
+	[OP_VOLUME]       = { volume_read, volume_write, volume_get_size },
 };
 
 int sheepfs_set_op(const char *path, unsigned opcode)
@@ -164,6 +166,8 @@ static void sheepfs_main_loop(char *root)
 	}
 
 	fuse_opt_add_arg(&args, "sheepfs"); /* placeholder for argv[0] */
+	fuse_opt_add_arg(&args, "-oallow_root");
+	fuse_opt_add_arg(&args, "-obig_writes");
 	fuse_opt_add_arg(&args, "-ofsname=sheepfs");
 	fuse_opt_add_arg(&args, root);
 	ret = fuse_main(args.argc, args.argv, &sheepfs_ops, NULL);
@@ -177,11 +181,13 @@ static int create_sheepfs_layout(void)
 		return -1;
 	if (create_vdi_layout() < 0)
 		return -1;
+	if (create_volume_layout() < 0)
+		return -1;
 
 	return 0;
 }
 
-int sheepfs_init(const char *dir)
+int sheepfs_init(const char *dir, int port)
 {
 	struct strbuf path = STRBUF_INIT;
 	pid_t pid;
@@ -207,6 +213,11 @@ int sheepfs_init(const char *dir)
 		strbuf_release(&path);
 		return 0;
 	} else /* child */ {
+		sheep_fd = connect_to("localhost", port);
+		if (sheep_fd < 0) {
+			eprintf("failed to connect sheep\n");
+			exit(-1);
+		}
 		sheepfs_main_loop(path.buf);
 		exit(0);
 	}
